@@ -1,5 +1,5 @@
 /// A Flutter package for converting between MIME types and file extensions.
-library mime2extension;
+library;
 
 import 'src/db.dart';
 
@@ -23,7 +23,7 @@ List<String> mime2Extension(List<String> mimeTypes) {
       final prefix = mimeType.substring(0, mimeType.length - 2);
       
       for (final entry in database.entries) {
-        if (entry.key.startsWith(prefix + '/')) {
+        if (entry.key.startsWith('$prefix/')) {
           final value = entry.value;
           if (value is Map && value.containsKey('extensions')) {
             final exts = value['extensions'];
