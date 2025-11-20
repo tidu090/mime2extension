@@ -219,4 +219,4 @@ See [CHANGELOG.md](CHANGELOG.md) for a list of changes.
 
 If you find this package helpful, please give it a ⭐ on GitHub!
 
-For issues, questions, or suggestions, please [open an issue](https://github.com/yourusername/mime2extension/issues).
+For issues, questions, or suggestions, please [open an issue](https://github.com/tidu090/mime2extension/issues).
