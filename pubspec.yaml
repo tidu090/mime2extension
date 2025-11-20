@@ -1,6 +1,6 @@
 name: mime2extension
 description: "A Flutter package for converting between MIME types and file extensions with wildcard support."
-version: 0.0.1
+version: 0.0.2
 homepage:
 
 environment:
