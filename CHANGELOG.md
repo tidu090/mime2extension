@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.5] - 2026-03-10
+
+### Added
+- OLE2 Compound Binary Format sub-format detection — differentiates DOC, XLS, PPT by scanning for UTF-16LE directory entry stream names (Workbook, Book, PowerPoint Document, WordDocument)
+- 10 new unit tests for OLE2 detection (total: 66 tests)
+
 ## [0.0.4] - 2026-03-10
 
 ### Added
@@ -13,9 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Magic bytes database with 400+ file signatures covering images, audio, video, documents, archives, fonts, executables, and more
 - Smart RIFF container detection — differentiates WEBP, AVI, WAV, CDA, QCP, RMI, ANI, CMX, CDR
 - Smart ISO BMFF (ftyp) container detection — differentiates MP4, MOV, HEIC, AVIF, M4A, M4V, 3GP, 3G2, HEIF
-- Smart OLE2 Compound Binary Format detection — differentiates DOC, XLS, PPT by scanning for UTF-16LE directory entry stream names (Workbook, Book, PowerPoint Document, WordDocument)
 - Automatic data URI prefix stripping (`data:...;base64,` handled transparently)
-- 52 new unit tests for base64 detection (total: 66 tests)
+- 42 new unit tests for base64 detection (total: 56 tests)
 - Missing common file signatures: WASM, JPEG XL, RAR5, ZSTD, LZ4
 
 ## [0.0.3] - 2025-11-21
@@ -58,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for multiple MIME types in a single query
 - Combines exact matches and wildcard patterns
 
+[0.0.5]: https://github.com/tidu090/mime2extension/releases/tag/v0.0.5
 [0.0.4]: https://github.com/tidu090/mime2extension/releases/tag/v0.0.4
 [0.0.3]: https://github.com/tidu090/mime2extension/releases/tag/v0.0.3
 [0.0.2]: https://github.com/tidu090/mime2extension/releases/tag/v0.0.2
