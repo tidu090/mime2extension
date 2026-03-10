@@ -80,8 +80,9 @@ String? extension2Mime(String extension) {
 /// Accepts raw base64 strings or data URIs (e.g., `data:image/png;base64,...`).
 /// Returns the file extension (without dot) or `null` if unrecognized.
 ///
-/// Handles RIFF container formats (AVI, WAV, WEBP) and ISO Base Media File
-/// Format containers (MP4, MOV, HEIC, AVIF, M4A) with sub-format detection.
+/// Handles RIFF container formats (AVI, WAV, WEBP), ISO Base Media File
+/// Format containers (MP4, MOV, HEIC, AVIF, M4A), and OLE2 Compound Binary
+/// Format containers (DOC, XLS, PPT) with sub-format detection.
 ///
 /// Example:
 /// ```dart
@@ -101,6 +102,12 @@ String? base64ToExtension(String base64Data) {
   // ISO BMFF container: bytes 0-3 = box size, 4-7 = "ftyp", 8-11 = brand
   if (bytes.length >= 12 && _matchesAt(bytes, 4, _ftypMarker)) {
     return _detectBmffFormat(bytes);
+  }
+
+  // OLE2 Compound Binary Format: scan directory entry stream names to
+  // distinguish Word, Excel, and PowerPoint files.
+  if (bytes.length >= 8 && _matchesAt(bytes, 0, _ole2Header)) {
+    return _detectOle2Format(bytes);
   }
 
   for (final entry in magicBytesDatabase) {
@@ -139,6 +146,13 @@ String? base64ToMime(String base64Data) {
 
 const _riffHeader = [0x52, 0x49, 0x46, 0x46];
 const _ftypMarker = [0x66, 0x74, 0x79, 0x70];
+const _ole2Header = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+
+// UTF-16LE encoded OLE2 directory entry stream names
+const _ole2Workbook = [0x57, 0x00, 0x6F, 0x00, 0x72, 0x00, 0x6B, 0x00, 0x62, 0x00, 0x6F, 0x00, 0x6F, 0x00, 0x6B, 0x00];
+const _ole2Book = [0x42, 0x00, 0x6F, 0x00, 0x6F, 0x00, 0x6B, 0x00];
+const _ole2PowerPoint = [0x50, 0x00, 0x6F, 0x00, 0x77, 0x00, 0x65, 0x00, 0x72, 0x00, 0x50, 0x00, 0x6F, 0x00, 0x69, 0x00, 0x6E, 0x00, 0x74, 0x00, 0x20, 0x00, 0x44, 0x00, 0x6F, 0x00, 0x63, 0x00, 0x75, 0x00, 0x6D, 0x00, 0x65, 0x00, 0x6E, 0x00, 0x74, 0x00];
+const _ole2WordDocument = [0x57, 0x00, 0x6F, 0x00, 0x72, 0x00, 0x64, 0x00, 0x44, 0x00, 0x6F, 0x00, 0x63, 0x00, 0x75, 0x00, 0x6D, 0x00, 0x65, 0x00, 0x6E, 0x00, 0x74, 0x00];
 
 List<int>? _decodeBase64(String input) {
   try {
@@ -176,6 +190,30 @@ String _detectRiffFormat(List<int> bytes) {
   if (_matchesAt(bytes, 8, [0x43, 0x4D, 0x58, 0x31])) return 'cmx';  // CMX1
   if (_matchesAt(bytes, 8, [0x43, 0x44, 0x52])) return 'cdr';        // CDR
   return 'avi';
+}
+
+String _detectOle2Format(List<int> bytes) {
+  // Scan for UTF-16LE stream names in the OLE2 directory entries.
+  // Check Excel first (Workbook for 97+, Book for 5.0/95), then PowerPoint,
+  // then Word. Fall back to 'doc' if no stream name matches.
+  if (_bytesContain(bytes, _ole2Workbook)) return 'xls';
+  if (_bytesContain(bytes, _ole2Book)) return 'xls';
+  if (_bytesContain(bytes, _ole2PowerPoint)) return 'ppt';
+  if (_bytesContain(bytes, _ole2WordDocument)) return 'doc';
+  return 'doc';
+}
+
+bool _bytesContain(List<int> data, List<int> pattern) {
+  if (pattern.isEmpty) return true;
+  final limit = data.length - pattern.length;
+  outer:
+  for (var i = 0; i <= limit; i++) {
+    for (var j = 0; j < pattern.length; j++) {
+      if (data[i + j] != pattern[j]) continue outer;
+    }
+    return true;
+  }
+  return false;
 }
 
 String _detectBmffFormat(List<int> bytes) {

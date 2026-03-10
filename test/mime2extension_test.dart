@@ -382,6 +382,114 @@ void main() {
     });
   });
 
+  group('base64ToExtension - OLE2 Compound Binary Format', () {
+    // Helper to build a minimal OLE2 file with a stream name embedded.
+    // Real OLE2 files have complex sector chains, but for detection we just
+    // need the magic header + the UTF-16LE stream name somewhere in the data.
+    List<int> _buildOle2WithStream(List<int> streamName) {
+      const header = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+      // Pad to simulate real file structure; stream names appear in directory
+      // entries typically after the header sectors.
+      return [
+        ...header,
+        ...List.filled(512, 0x00), // simulate header sector padding
+        ...streamName,
+        ...List.filled(64, 0x00), // trailing data
+      ];
+    }
+
+    test('should detect XLS via "Workbook" stream (Excel 97+)', () {
+      const workbook = [0x57, 0x00, 0x6F, 0x00, 0x72, 0x00, 0x6B, 0x00, 0x62, 0x00, 0x6F, 0x00, 0x6F, 0x00, 0x6B, 0x00];
+      final bytes = _buildOle2WithStream(workbook);
+      final b64 = base64Encode(bytes);
+      expect(base64ToExtension(b64), equals('xls'));
+    });
+
+    test('should detect XLS via "Book" stream (Excel 5.0/95)', () {
+      const book = [0x42, 0x00, 0x6F, 0x00, 0x6F, 0x00, 0x6B, 0x00];
+      final bytes = _buildOle2WithStream(book);
+      final b64 = base64Encode(bytes);
+      expect(base64ToExtension(b64), equals('xls'));
+    });
+
+    test('should detect PPT via "PowerPoint Document" stream', () {
+      const pptStream = [0x50, 0x00, 0x6F, 0x00, 0x77, 0x00, 0x65, 0x00, 0x72, 0x00, 0x50, 0x00, 0x6F, 0x00, 0x69, 0x00, 0x6E, 0x00, 0x74, 0x00, 0x20, 0x00, 0x44, 0x00, 0x6F, 0x00, 0x63, 0x00, 0x75, 0x00, 0x6D, 0x00, 0x65, 0x00, 0x6E, 0x00, 0x74, 0x00];
+      final bytes = _buildOle2WithStream(pptStream);
+      final b64 = base64Encode(bytes);
+      expect(base64ToExtension(b64), equals('ppt'));
+    });
+
+    test('should detect DOC via "WordDocument" stream', () {
+      const wordDoc = [0x57, 0x00, 0x6F, 0x00, 0x72, 0x00, 0x64, 0x00, 0x44, 0x00, 0x6F, 0x00, 0x63, 0x00, 0x75, 0x00, 0x6D, 0x00, 0x65, 0x00, 0x6E, 0x00, 0x74, 0x00];
+      final bytes = _buildOle2WithStream(wordDoc);
+      final b64 = base64Encode(bytes);
+      expect(base64ToExtension(b64), equals('doc'));
+    });
+
+    test('should fall back to doc for OLE2 without known streams', () {
+      const header = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+      final bytes = [...header, ...List.filled(256, 0x00)];
+      final b64 = base64Encode(bytes);
+      expect(base64ToExtension(b64), equals('doc'));
+    });
+
+    test('should prefer XLS when both Workbook and WordDocument are present', () {
+      const workbook = [0x57, 0x00, 0x6F, 0x00, 0x72, 0x00, 0x6B, 0x00, 0x62, 0x00, 0x6F, 0x00, 0x6F, 0x00, 0x6B, 0x00];
+      const wordDoc = [0x57, 0x00, 0x6F, 0x00, 0x72, 0x00, 0x64, 0x00, 0x44, 0x00, 0x6F, 0x00, 0x63, 0x00, 0x75, 0x00, 0x6D, 0x00, 0x65, 0x00, 0x6E, 0x00, 0x74, 0x00];
+      const header = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+      final bytes = [
+        ...header,
+        ...List.filled(512, 0x00),
+        ...workbook,
+        ...List.filled(128, 0x00),
+        ...wordDoc,
+        ...List.filled(64, 0x00),
+      ];
+      final b64 = base64Encode(bytes);
+      expect(base64ToExtension(b64), equals('xls'));
+    });
+  });
+
+  group('base64ToMime - OLE2 Compound Binary Format', () {
+    List<int> _buildOle2WithStream(List<int> streamName) {
+      const header = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+      return [
+        ...header,
+        ...List.filled(512, 0x00),
+        ...streamName,
+        ...List.filled(64, 0x00),
+      ];
+    }
+
+    test('should return application/vnd.ms-excel for XLS', () {
+      const workbook = [0x57, 0x00, 0x6F, 0x00, 0x72, 0x00, 0x6B, 0x00, 0x62, 0x00, 0x6F, 0x00, 0x6F, 0x00, 0x6B, 0x00];
+      final bytes = _buildOle2WithStream(workbook);
+      final b64 = base64Encode(bytes);
+      expect(base64ToMime(b64), equals('application/vnd.ms-excel'));
+    });
+
+    test('should return application/vnd.ms-powerpoint for PPT', () {
+      const pptStream = [0x50, 0x00, 0x6F, 0x00, 0x77, 0x00, 0x65, 0x00, 0x72, 0x00, 0x50, 0x00, 0x6F, 0x00, 0x69, 0x00, 0x6E, 0x00, 0x74, 0x00, 0x20, 0x00, 0x44, 0x00, 0x6F, 0x00, 0x63, 0x00, 0x75, 0x00, 0x6D, 0x00, 0x65, 0x00, 0x6E, 0x00, 0x74, 0x00];
+      final bytes = _buildOle2WithStream(pptStream);
+      final b64 = base64Encode(bytes);
+      expect(base64ToMime(b64), equals('application/vnd.ms-powerpoint'));
+    });
+
+    test('should return application/msword for DOC', () {
+      const wordDoc = [0x57, 0x00, 0x6F, 0x00, 0x72, 0x00, 0x64, 0x00, 0x44, 0x00, 0x6F, 0x00, 0x63, 0x00, 0x75, 0x00, 0x6D, 0x00, 0x65, 0x00, 0x6E, 0x00, 0x74, 0x00];
+      final bytes = _buildOle2WithStream(wordDoc);
+      final b64 = base64Encode(bytes);
+      expect(base64ToMime(b64), equals('application/msword'));
+    });
+
+    test('should return application/msword for generic OLE2', () {
+      const header = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+      final bytes = [...header, ...List.filled(256, 0x00)];
+      final b64 = base64Encode(bytes);
+      expect(base64ToMime(b64), equals('application/msword'));
+    });
+  });
+
   group('base64ToMime', () {
     test('should return MIME type for PNG', () {
       final bytes = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00];

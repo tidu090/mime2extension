@@ -154,6 +154,7 @@ Detects the file extension from base64-encoded binary data by inspecting magic b
 **Supported container formats with sub-format detection:**
 - **RIFF** — differentiates AVI, WAV, WEBP, CDA, QCP, RMI, ANI, CMX, CDR
 - **ISO BMFF (ftyp)** — differentiates MP4, MOV, HEIC, AVIF, M4A, M4V, 3GP, 3G2, HEIF
+- **OLE2 Compound Binary** — differentiates DOC, XLS, PPT by scanning for UTF-16LE stream names (Workbook, Book, PowerPoint Document, WordDocument)
 
 **Example:**
 ```dart
@@ -287,7 +288,7 @@ The package includes comprehensive unit tests. To run them:
 flutter test
 ```
 
-All 56 tests cover:
+All 66 tests cover:
 - Extension to MIME conversion
 - MIME to extension conversion
 - Wildcard pattern matching
@@ -295,6 +296,7 @@ All 56 tests cover:
 - Base64 to MIME type detection
 - RIFF container sub-format detection (WEBP, AVI, WAV)
 - ISO BMFF container brand detection (MP4, HEIC, AVIF, M4A, MOV, 3GP)
+- OLE2 Compound Binary sub-format detection (DOC, XLS, PPT)
 - Data URI prefix handling
 - Edge cases and error handling
 - Integration tests
