@@ -1,6 +1,6 @@
 name: mime2extension
 description: "A Flutter package for converting between MIME types and file extensions with wildcard support and base64 file type detection via magic bytes."
-version: 0.0.4
+version: 0.0.5
 homepage: https://github.com/tidu090/mime2extension
 repository: https://github.com/tidu090/mime2extension
 
